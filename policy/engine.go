@@ -3,7 +3,9 @@ package policy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -131,7 +133,11 @@ func LoadWithData(policyPaths []string, dataPaths []string, capabilities string,
 		return !contains([]string{".yaml", ".yml", ".json"}, filepath.Ext(info.Name()))
 	})
 	if err != nil {
-		return nil, fmt.Errorf("filter data paths: %w", err)
+		if errors.Is(err.(loader.Errors)[0], fs.ErrNotExist) && len(dataPaths) == 1 && dataPaths[0] == "data" {
+			allDocumentPaths = []string{}
+		} else {
+			return nil, fmt.Errorf("sldkjf filter data paths: %s", err)
+		}
 	}
 
 	documents, err := loader.NewFileLoader().All(allDocumentPaths)
